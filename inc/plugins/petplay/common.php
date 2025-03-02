@@ -42,6 +42,76 @@ function addHooksNamespace(string $namespace)
     }
 }
 
+function loadTemplates(array $templates, string $prefix = null): void
+{
+    global $templatelist;
+
+    if (!empty($templatelist)) {
+        $templatelist .= ',';
+    }
+    if ($prefix) {
+        $templates = preg_filter('/^/', $prefix, $templates);
+    }
+
+    $templatelist .= implode(',', $templates);
+}
+
+function tpl(string $name): string
+{
+    global $templates;
+
+    $templateName = 'petplay_' . $name;
+    $directory = MYBB_ROOT . 'inc/plugins/petplay/templates/';
+
+    if (DEVELOPMENT_MODE) {
+        $templateContent = str_replace(
+            "\\'",
+            "'",
+            addslashes(
+                file_get_contents($directory . $name . '.tpl')
+            )
+        );
+
+        if (!isset($templates->cache[$templateName]) && !isset($templates->uncached_templates[$templateName])) {
+            $templates->uncached_templates[$templateName] = $templateName;
+        }
+
+        return $templateContent;
+    } else {
+        return $templates->get($templateName);
+    }
+}
+
+function replaceInTemplate(string $title, string $find, string $replace): bool
+{
+    require_once MYBB_ROOT . 'inc/adminfunctions_templates.php';
+
+    return \find_replace_templatesets($title, '#' . preg_quote($find, '#') . '#', $replace);
+}
+
+function getFilesContentInDirectory(string $path, string $fileNameSuffix)
+{
+    $contents = [];
+
+    if (!is_dir($path)) {
+        return $contents;
+    }
+
+    $directory = new \DirectoryIterator($path);
+
+    foreach ($directory as $file) {
+        if (!$file->isDot() && !$file->isDir()) {
+            $filePath = $file->getPathname();
+            if (substr($filePath, -strlen($fileNameSuffix)) === $fileNameSuffix) {
+                $templateName = basename($filePath, $fileNameSuffix);
+                $contents[$templateName] = file_get_contents($filePath);
+            }
+        }
+    }
+
+    return $contents;
+}
+
 function loadPluginLibrary(): void
 {
     global $lang, $PL;
