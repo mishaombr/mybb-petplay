@@ -65,7 +65,26 @@ class ListManager
     
     public function pagination()
     {
-        $multipage = multipage($this->items_num, $this->per_page, $this->page, $this->baseurl . "&amp;sort={$this->sort_column}&amp;dir={$this->sort_dir}");
-        return $multipage;
+        global $lang;
+        
+        // Make sure these language variables exist
+        if (!isset($lang->multipage_pages)) {
+            $lang->multipage_pages = "Pages:";
+        }
+        if (!isset($lang->multipage_prev)) {
+            $lang->multipage_prev = "Previous";
+        }
+        if (!isset($lang->multipage_next)) {
+            $lang->multipage_next = "Next";
+        }
+        if (!isset($lang->multipage_last)) {
+            $lang->multipage_last = "Last";
+        }
+        if (!isset($lang->multipage_first)) {
+            $lang->multipage_first = "First";
+        }
+        
+        // Generate pagination
+        return multipage($this->items_num, $this->per_page, $this->page, $this->baseurl . '&amp;sort=' . $this->sort_column . '&amp;dir=' . $this->sort_dir);
     }
 } 

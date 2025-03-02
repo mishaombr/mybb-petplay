@@ -17,3 +17,4 @@ PetPlay allows forum users to collect, own, and manage virtual pets with differe
 
 - MyBB 1.8.x
 - [PluginLibrary](https://github.com/frostschutz/MyBB-PluginLibrary)
+- PostgreSQL database (MySQL and SQLite are not supported)

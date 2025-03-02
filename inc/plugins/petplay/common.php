@@ -130,3 +130,43 @@ function loadPluginLibrary(): void
         require_once PLUGINLIBRARY;
     }
 }
+
+/**
+ * Get the appropriate sprite for a pet
+ * 
+ * @param array $pet The pet data
+ * @param string $size 'normal' or 'mini'
+ * @return string URL to the sprite
+ */
+function getPetSprite($pet, $size = 'normal')
+{
+    global $config, $db;
+    
+    // Get species data if not already included
+    if (!isset($pet['sprite_path'])) {
+        $species = $db->fetch_array($db->simple_select('petplay_species', '*', 'id = ' . (int)$pet['species_id']));
+    } else {
+        $species = $pet;
+    }
+    
+    // Determine which sprite to use
+    if ($size == 'mini') {
+        if (!empty($species['mini_sprite_path'])) {
+            return $config['mybb_url'] . '/' . $species['mini_sprite_path'];
+        }
+        // Fall back to normal sprite if mini doesn't exist
+    }
+    
+    // Use shiny sprite if pet is shiny
+    if (isset($pet['is_shiny']) && $pet['is_shiny'] && !empty($species['shiny_sprite_path'])) {
+        return $config['mybb_url'] . '/' . $species['shiny_sprite_path'];
+    }
+    
+    // Use normal sprite
+    if (!empty($species['sprite_path'])) {
+        return $config['mybb_url'] . '/' . $species['sprite_path'];
+    }
+    
+    // Default placeholder
+    return $config['mybb_url'] . '/images/default_pet.png';
+}
