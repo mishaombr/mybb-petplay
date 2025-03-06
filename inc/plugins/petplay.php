@@ -57,15 +57,15 @@ function petplay_install(): void
 
     \petplay\createTables([
         \petplay\DbRepository\Types::class,
-        //\petplay\DbRepository\Natures::class,
-        //\petplay\DbRepository\Abilities::class,
-        //\petplay\DbRepository\Capsules::class,
-        //\petplay\DbRepository\Species::class,
-        //\petplay\DbRepository\SpeciesTypes::class,
-        //\petplay\DbRepository\Moves::class,
-        //\petplay\DbRepository\Pets::class,
-        //\petplay\DbRepository\PetMoves::class,
-        //\petplay\DbRepository\PetOwnershipHistory::class,
+        \petplay\DbRepository\Natures::class,
+        \petplay\DbRepository\Abilities::class,
+        \petplay\DbRepository\Capsules::class,
+        \petplay\DbRepository\Moves::class,
+        \petplay\DbRepository\Species::class,
+        \petplay\DbRepository\Pets::class,
+        \petplay\DbRepository\PetMoves::class,
+        \petplay\DbRepository\PetOwners::class,
+        \petplay\DbRepository\PetOwnershipHistory::class,
     ]);
 }
 
@@ -76,15 +76,15 @@ function petplay_uninstall(): void
     \petplay\loadMCommons();
 
     \petplay\dropTables([
-        //\petplay\DbRepository\PetOwnershipHistory::class,
-        //\petplay\DbRepository\PetMoves::class,
-        //\petplay\DbRepository\Pets::class,
-        //\petplay\DbRepository\Moves::class,
-        //\petplay\DbRepository\SpeciesTypes::class,
-        //\petplay\DbRepository\Species::class,
-        //\petplay\DbRepository\Capsules::class,
-        //\petplay\DbRepository\Natures::class,
-        //\petplay\DbRepository\Abilities::class,
+        \petplay\DbRepository\PetOwnershipHistory::class,
+        \petplay\DbRepository\PetOwners::class,
+        \petplay\DbRepository\PetMoves::class,
+        \petplay\DbRepository\Pets::class,
+        \petplay\DbRepository\Species::class,
+        \petplay\DbRepository\Moves::class,
+        \petplay\DbRepository\Capsules::class,
+        \petplay\DbRepository\Abilities::class,
+        \petplay\DbRepository\Natures::class,
         \petplay\DbRepository\Types::class,
     ], true, true);
 

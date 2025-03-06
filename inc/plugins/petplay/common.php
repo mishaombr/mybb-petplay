@@ -184,14 +184,15 @@ function createTables(array $tables): void
 
     foreach ($tables as $tableName => $columnsOrClass) {
         if (class_exists($columnsOrClass) && is_subclass_of($columnsOrClass, DbEntityRepository::class)) {
-            $db->write_query(buildCreateTableQuery($columnsOrClass::TABLE_NAME, $columnsOrClass::COLUMNS));
+            $tableConstraints = defined("$columnsOrClass::TABLE_CONSTRAINTS") ? $columnsOrClass::TABLE_CONSTRAINTS : [];
+            $db->write_query(buildCreateTableQuery($columnsOrClass::TABLE_NAME, $columnsOrClass::COLUMNS, $tableConstraints));
         } else {
             $db->write_query(buildCreateTableQuery($tableName, $columnsOrClass));
         }
     }
 }
 
-function buildCreateTableQuery(string $tableName, array $columns): string
+function buildCreateTableQuery(string $tableName, array $columns, array $tableConstraints = []): string
 {
     global $db;
 
@@ -200,6 +201,7 @@ function buildCreateTableQuery(string $tableName, array $columns): string
     $keys = [
         'foreign' => [],
         'unique' => [],
+        'check' => [],
     ];
 
     foreach ($columns as $columnName => $column) {
@@ -250,6 +252,12 @@ function buildCreateTableQuery(string $tableName, array $columns): string
             }
         }
 
+        // Add column-level check constraint if specified
+        if (!empty($column['check'])) {
+            $constraintName = $tableName . '_' . $columnName . '_check';
+            $columnDefinition .= ' CONSTRAINT ' . $constraintName . ' CHECK (' . $column['check'] . ')';
+        }
+
         if (!empty($column['uniqueKey'])) {
             $keys['unique'][$column['uniqueKey']][] = $columnName;
         }
@@ -289,6 +297,15 @@ function buildCreateTableQuery(string $tableName, array $columns): string
             }
 
             $keyDefinitions[] = $definition;
+        }
+    }
+
+    // Add table-level check constraints
+    if (!empty($tableConstraints)) {
+        foreach ($tableConstraints as $constraintName => $constraint) {
+            if ($constraint['type'] === 'check') {
+                $keyDefinitions[] = 'CONSTRAINT ' . $tableName . '_' . $constraintName . ' CHECK (' . $constraint['check'] . ')';
+            }
         }
     }
 
