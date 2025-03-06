@@ -43,7 +43,7 @@ class Species extends DbEntityRepository
             'notNull' => true, 
             'default' => "'{\"hp\": 50, \"attack\": 50, \"defence\": 50, \"special_attack\": 50, \"special_defence\": 50, \"speed\": 50}'::jsonb"
         ],
-        'sprite' => ['type' => 'varchar', 'length' => 255, 'notNull' => true],
+        'sprite' => ['type' => 'varchar', 'length' => 255, 'default' => 'NULL'],
         'sprite_shiny' => ['type' => 'varchar', 'length' => 255, 'default' => 'NULL'],
         'sprite_mini' => ['type' => 'varchar', 'length' => 255, 'default' => 'NULL'],
         'created_at' => ['type' => 'timestamptz', 'notNull' => true, 'default' => 'CURRENT_TIMESTAMP']
