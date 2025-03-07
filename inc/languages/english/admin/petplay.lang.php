@@ -25,3 +25,6 @@ $l['petplay_admin_species_page_description'] = 'Manage different pet species ava
 $l['petplay_admin_capsules'] = 'Capsules';
 $l['petplay_admin_capsules_page_description'] = 'Manage capsules used to catch and store pets.';
 
+$l['petplay_admin_pets'] = 'Pets';
+$l['petplay_admin_pets_page_description'] = 'Manage individual pets in the system.';
+
