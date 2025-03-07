@@ -54,20 +54,58 @@ function admin_load(): void
 
         $plugins->run_hooks('petplay_admin_config_petplay_begin');
 
-        if ($mybb->input['action'] == 'pets' || empty($mybb->input['action'])) {
-            $page->output_header($lang->petplay_admin);
-            $page->output_nav_tabs($sub_tabs, $mybb->input['action'] ?: 'pets');
-            $page->output_success($lang->petplay_admin_pets . " management page is under construction");
-            $page->output_footer();
+        if ($mybb->input['action'] == 'types') {
+            $controller = new \petplay\AcpEntityManagementController(
+                'types',
+                \petplay\DbRepository\Types::class,
+                [
+                    'name' => [
+                        'type' => 'text',
+                        'label' => $lang->petplay_admin_types_name,
+                        'description' => $lang->petplay_admin_types_name_desc,
+                        'required' => true
+                    ],
+                    'description' => [
+                        'type' => 'textarea',
+                        'label' => $lang->petplay_admin_types_description,
+                        'description' => $lang->petplay_admin_types_description_desc,
+                        'required' => true
+                    ],
+                    'colour' => [
+                        'type' => 'color',
+                        'label' => $lang->petplay_admin_types_colour,
+                        'description' => $lang->petplay_admin_types_colour_desc,
+                        'required' => true,
+                        'default' => '#A8A878'
+                    ],
+                    'sprite_path' => [
+                        'type' => 'text',
+                        'label' => $lang->petplay_admin_types_sprite_path,
+                        'description' => $lang->petplay_admin_types_sprite_path_desc
+                    ],
+                    'is_default' => [
+                        'type' => 'checkbox',
+                        'label' => $lang->petplay_admin_types_is_default,
+                        'description' => $lang->petplay_admin_types_is_default_desc,
+                        'default' => false
+                    ]
+                ],
+                [
+                    'id' => ['width' => '5%', 'label' => $lang->petplay_admin_id],
+                    'name' => ['width' => '20%', 'label' => $lang->petplay_admin_types_name],
+                    'description' => ['width' => '40%', 'label' => $lang->petplay_admin_types_description],
+                    'colour' => ['width' => '15%', 'label' => $lang->petplay_admin_types_colour],
+                    'is_default' => ['width' => '10%', 'label' => $lang->petplay_admin_types_is_default],
+                    'actions' => ['width' => '10%', 'label' => $lang->petplay_admin_actions]
+                ],
+                $pageUrl . '&amp;action=types'
+            );
+            
+            $controller->handleRequest($mybb->input);
         } elseif ($mybb->input['action'] == 'species') {
             $page->output_header($lang->petplay_admin);
             $page->output_nav_tabs($sub_tabs, 'species');
             $page->output_success($lang->petplay_admin_species . " management page is under construction");
-            $page->output_footer();
-        } elseif ($mybb->input['action'] == 'types') {
-            $page->output_header($lang->petplay_admin);
-            $page->output_nav_tabs($sub_tabs, 'types');
-            $page->output_success($lang->petplay_admin_types . " management page is under construction");
             $page->output_footer();
         } elseif ($mybb->input['action'] == 'moves') {
             $page->output_header($lang->petplay_admin);
@@ -88,6 +126,11 @@ function admin_load(): void
             $page->output_header($lang->petplay_admin);
             $page->output_nav_tabs($sub_tabs, 'capsules');
             $page->output_success($lang->petplay_admin_capsules . " management page is under construction");
+            $page->output_footer();
+        } elseif ($mybb->input['action'] == 'pets' || empty($mybb->input['action'])) {
+            $page->output_header($lang->petplay_admin);
+            $page->output_nav_tabs($sub_tabs, $mybb->input['action'] ?: 'pets');
+            $page->output_success($lang->petplay_admin_pets . " management page is under construction");
             $page->output_footer();
         }
     }

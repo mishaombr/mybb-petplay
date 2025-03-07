@@ -249,6 +249,7 @@ abstract class DbEntityRepository
         } else {
             switch ($column['type']) {
                 case 'bool':
+                case 'boolean':
                     if ($this->db->type == 'pgsql') {
                         $boolValue = (bool)$value;
                         $escapedValue = $boolValue ? 'TRUE' : 'FALSE';

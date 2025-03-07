@@ -1,541 +1,483 @@
 <?php
 
+declare(strict_types=1);
+
 namespace petplay;
 
 class AcpEntityManagementController
 {
-    protected string $pageUrl;
-    protected string $actionUrl;
-    protected string $actionName;
-    protected array $columns = [];
-    protected array $dataColumns = [];
-    protected array $foreignKeyData = [];
-    protected array $entityOptions = [];
-    protected array $listManagerOptions = [];
-    protected bool $insertAllowed = true;
-    protected bool $filterAllowed = false;
-    protected $insertController;
-
-    /* @var DbEntityRepository */
-    protected $dbRepository;
-
-    protected $db;
-    protected $mybb;
-    protected $lang;
-    protected $page;
-    protected $sub_tabs;
-
-    public function __construct(string $actionName, string $dbRepository)
-    {
-        global $db, $mybb, $lang, $page, $sub_tabs, $pageUrl;
-
-        $this->db = $db;
-        $this->mybb = $mybb;
-        $this->lang = $lang;
-        $this->page = $page;
-        $this->sub_tabs = $sub_tabs;
-
-        $this->pageUrl = $pageUrl;
-        $this->actionName = $actionName;
-        $this->actionUrl = $this->pageUrl . '&action=' . $this->actionName;
-        $this->dbRepository = $dbRepository::with($this->db);
-
-        $this->setColumns($this->dbRepository::COLUMNS);
+    protected string $entityName;
+    protected string $repositoryClass;
+    protected array $formFields = [];
+    protected array $listColumns = [];
+    protected string $baseUrl;
+    
+    public function __construct(
+        string $entityName,
+        string $repositoryClass,
+        array $formFields,
+        array $listColumns,
+        string $baseUrl
+    ) {
+        $this->entityName = $entityName;
+        $this->repositoryClass = $repositoryClass;
+        $this->formFields = $formFields;
+        $this->listColumns = $listColumns;
+        $this->baseUrl = $baseUrl;
     }
-
-    public function run(): void
+    
+    public function handleRequest(array $input): void
     {
-        if ($this->mybb->request_method == 'post' && $this->mybb->get_input('add')) {
-            if ($this->insertAllowed) {
-                if (is_callable($this->insertController)) {
-                    ($this->insertController)();
+        $option = $input['option'] ?? 'list';
+        
+        switch ($option) {
+            case 'add':
+                $this->showAddForm();
+                break;
+            case 'edit':
+                $this->showEditForm((int)($input['id'] ?? 0));
+                break;
+            case 'save':
+                $this->saveEntity($input);
+                break;
+            case 'delete':
+                $this->deleteEntity((int)($input['id'] ?? 0));
+                break;
+            case 'list':
+            default:
+                $this->showList();
+                break;
+        }
+    }
+    
+    protected function showList(): void
+    {
+        global $page, $lang, $db, $mybb;
+        
+        $page->output_header($lang->petplay_admin);
+        $page->output_nav_tabs($GLOBALS['sub_tabs'], $this->entityName);
+        
+        echo '<div style="margin-bottom: 10px; overflow: hidden;">
+            <div class="float_left">
+                <a href="' . $this->baseUrl . '&amp;option=add" class="button">
+                    <i class="fa-solid fa-plus"></i> ' . $lang->{"petplay_admin_{$this->entityName}_add"} . '
+                </a>
+            </div>
+            <div style="clear: both;"></div>
+        </div>';
+        
+        // Create table for listing entities
+        $table = new \Table();
+        
+        // Set up table headers
+        foreach ($this->listColumns as $column => $config) {
+            $table->construct_header($config['label'], ['width' => $config['width']]);
+        }
+        
+        // Get repository instance
+        $repository = call_user_func([$this->repositoryClass, 'with'], $db);
+        
+        // Fetch all entities
+        $query = $repository->get();
+        
+        while ($entity = $db->fetch_array($query)) {
+            foreach ($this->listColumns as $column => $config) {
+                if ($column === 'actions') {
+                    // Actions column
+                    $table->construct_cell(
+                        '<a href="' . $this->baseUrl . '&amp;option=edit&amp;id=' . (int)$entity['id'] . '" class="button">
+                            <i class="fa-solid fa-edit"></i>
+                        </a>
+                        <a href="' . $this->baseUrl . '&amp;option=delete&amp;id=' . (int)$entity['id'] . '&amp;my_post_key=' . $mybb->post_code . '" class="button" onclick="return confirm(\'' . $lang->{"petplay_admin_{$this->entityName}_delete_confirm"} . '\');">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>',
+                        ['class' => 'align_center']
+                    );
+                } elseif ($column === 'colour' || $column === 'color') {
+                    // Special handling for color column
+                    $table->construct_cell(
+                        '<div style="display: flex; align-items: center;">
+                            <div style="width: 20px; height: 20px; background-color: ' . htmlspecialchars_uni($entity[$column]) . '; margin-right: 10px; border: 1px solid #ccc;"></div>
+                            ' . htmlspecialchars_uni($entity[$column]) . '
+                        </div>'
+                    );
+                } elseif ($column === 'is_default' || substr($column, 0, 3) === 'is_') {
+                    // Special handling for boolean column
+                    $icon = $entity[$column] ? 'fa-solid fa-check text-success' : 'fa-solid fa-xmark text-danger';
+                    $table->construct_cell('<i class="' . $icon . '"></i>', ['class' => 'align_center']);
                 } else {
-                    $this->defaultInsertController();
+                    $table->construct_cell(htmlspecialchars_uni($entity[$column]));
                 }
             }
-        } elseif (in_array($this->mybb->get_input('option'), array_keys($this->entityOptions))) {
-            $entityOption = &$this->entityOptions[$this->mybb->get_input('option')];
-
-            if (isset($entityOption['controller']) && is_callable($entityOption['controller'])) {
-                $entityOption['controller']();
-            } else {
-                $this->{'default' . ucfirst($this->mybb->get_input('option')) . 'OptionController'}();
-            }
-        } else {
-            $this->page->output_header($this->actionLang());
-            $this->page->output_nav_tabs($this->sub_tabs, $this->actionName);
-
-            $this->outputList();
-
-            if ($this->insertAllowed) {
-                echo '<br />';
-
-                $this->outputAddForm();
-            }
-
-            if ($this->filterAllowed) {
-                echo '<br />';
-
-                $this->outputFilterForm();
-            }
-
-            $this->page->output_footer();
-        }
-    }
-
-    public function insertAllowed(bool $status): void
-    {
-        $this->insertAllowed = $status;
-    }
-
-    public function listManagerOptions(array $options): void
-    {
-        $this->listManagerOptions = $options;
-    }
-
-    public function setColumns(array $columns): void
-    {
-        $dataColumns = [];
-
-        foreach ($columns as $columnName => &$column) {
-            if (!isset($column['customizable'])) {
-                $column['customizable'] = $columnName == 'id' ? false : true;
-            }
-
-            if (!isset($column['listed'])) {
-                $column['listed'] = true;
-            }
-
-            if (!isset($column['filter'])) {
-                $column['filter'] = false;
-            }
-
-            if (!isset($column['presenter'])) {
-                $column['presenter'] = null;
-            }
-
-            if (!isset($column['encoder'])) {
-                $column['encoder'] = null;
-            }
-
-            if (!isset($column['outputHandler'])) {
-                $column['outputHandler'] = null;
-            }
-
-            if ($column['listed']) {
-                if (isset($column['dataColumn'])) {
-                    $dataColumns[$column['dataColumn']] = $columnName;
-                } else {
-                    $dataColumns[] = $columnName;
-                }
-            }
-
-            if ($column['filter']) {
-                $this->filterAllowed = true;
-            }
-        }
-
-        $this->columns = $columns;
-        $this->dataColumns = $dataColumns;
-    }
-
-    public function addForeignKeyData(array $foreignKeyData): void
-    {
-        $this->foreignKeyData = array_merge($this->foreignKeyData, $foreignKeyData);
-    }
-
-    public function addEntityOptions(array $entityOptions): void
-    {
-        $this->entityOptions = array_merge($this->entityOptions, $entityOptions);
-    }
-
-    public function outputAddForm()
-    {
-        $this->outputForm(
-            'add',
-            $this->actionUrl . '&amp;add=1',
-            $this->actionLang('add')
-        );
-    }
-
-    public function outputFilterForm()
-    {
-        $this->outputForm(
-            'filter',
-            $this->actionUrl,
-            $this->actionLang('filter')
-        );
-    }
-
-    public function outputList()
-    {
-        $whereConditions = $this->getFilterConditions();
-
-        if ($whereConditions) {
-            $where = 'WHERE ' . $whereConditions . ' ';
-
-            $itemsNum = $this->db->fetch_field(
-                $this->dbRepository->get('COUNT(id) AS n', $where, array_fill_keys(array_keys($this->foreignKeyData), [])),
-                'n'
-            );
-        } else {
-            $where = null;
-
-            $itemsNum = $this->dbRepository->count($whereConditions);
-        }
-
-        $defaultOptions = [
-            'mybb' => $this->mybb,
-            'baseurl' => $this->actionUrl,
-            'order_columns' => $this->dataColumns,
-            'order_dir' => 'asc',
-            'items_num' => $itemsNum,
-            'per_page' => 20,
-        ];
-
-        $listManager = new ListManager(
-            array_merge($defaultOptions, $this->listManagerOptions)
-        );
-
-        $query = $this->dbRepository->get('*', $where . ' ' . $listManager->sql(), $this->foreignKeyData);
-
-        $table = new \Table;
-
-        $listColumnCount = 0;
-
-        foreach ($this->getListedColumns() as $columnName => $column) {
-            $listColumnCount++;
-
-            $table->construct_header(
-                $listManager->link($columnName, $this->actionLang($columnName)),
-                [
-                    'class' => 'align_center',
-                ]
-            );
-        }
-
-        if ($this->entityOptions) {
-            $listColumnCount++;
-
-            $table->construct_header($this->lang->options, [
-                'width' => '15%',
-                'class' => 'align_center',
-            ]);
-        }
-
-        if ($itemsNum > 0) {
-            $i = 0;
-
-            while ($row = $this->db->fetch_array($query)) {
-                $i++;
-
-                foreach ($this->getListedColumns() as $columnName => $column) {
-                    if (is_callable($column['outputHandler'])) {
-                        $value = $column['outputHandler']($row);
-                    } else {
-                        if (!empty($column['dataColumn'])) {
-                            $key = $column['dataColumn'];
-                        } else {
-                            $key = $columnName;
-                        }
-
-                        if (is_callable($column['presenter'])) {
-                            $value = $column['presenter']($row[$key], $row);
-                        } else {
-                            $value = \htmlspecialchars_uni(
-                                $row[$key]
-                            );
-                        }
-                    }
-
-                    $table->construct_cell($value, ['class' => 'align_center']);
-                }
-
-                if ($this->entityOptions) {
-                    $popup = new \PopupMenu('options_' . $i, $this->lang->options);
-
-                    foreach ($this->entityOptions as $optionName => $option) {
-                        $optionUrl = $this->actionUrl . '&amp;option=' . $optionName . '&amp;id=' . (int)$row['id'];
-
-                        if ($optionName == 'update') {
-                            $optionTitle = $this->lang->edit;
-                        } elseif ($optionName == 'delete') {
-                            $optionTitle = $this->lang->delete;
-                        } else {
-                            $optionTitle = $this->actionLang('option_' . $optionName);
-                        }
-
-                        $popup->add_item($optionTitle, $optionUrl);
-                    }
-
-                    $options = $popup->fetch();
-                    $table->construct_cell($options, ['class' => 'align_center']);
-                }
-
-                $table->construct_row();
-            }
-        } else {
-            $table->construct_cell($this->actionLang('empty'), [
-                'colspan' => $listColumnCount,
-                'class' => 'align_center'
-            ]);
+            
             $table->construct_row();
         }
-
-        $table->output($this->lang->sprintf(
-            $this->actionLang('list'),
-            $itemsNum
-        ));
-
-        echo $listManager->pagination();
+        
+        if ($table->num_rows() == 0) {
+            $table->construct_cell($lang->{'petplay_admin_no_' . $this->entityName}, ['colspan' => count($this->listColumns)]);
+            $table->construct_row();
+        }
+        
+        $table->output($lang->{'petplay_admin_' . $this->entityName});
+        
+        $page->output_footer();
     }
-
-    protected function getFilterConditions(): ?string
+    
+    protected function showAddForm(): void
     {
-        $conditions = [];
-
-        if (isset($this->mybb->input['filter'])) {
-            $inputFilterValues = $this->mybb->get_input('filter', \MyBB::INPUT_ARRAY);
-
-            foreach ($this->columns as $columnName => $column) {
-                if ($column['filter'] && isset($inputFilterValues[$columnName]) && $inputFilterValues[$columnName] !== '') {
-                    $operator = '=';
-                    $value = $inputFilterValues[$columnName];
-
-                    if (isset($column['dataColumn'])) {
-                        if (isset($column['filterConditionColumn'])) {
-                            $queryColumn = $column['filterConditionColumn'];
-
-                            $conditions[] = $queryColumn . ' ' . $operator . " '" . $this->db->escape_string($value) . "'";
-                        }
-                    } else {
-                        $conditions[] = $this->dbRepository->getEscapedComparison($columnName, $operator, $value);
-                    }
-                }
+        global $page, $lang;
+        
+        $page->output_header($lang->petplay_admin);
+        $page->output_nav_tabs($GLOBALS['sub_tabs'], $this->entityName);
+        
+        $form = new \Form($this->baseUrl . '&amp;option=save', 'post');
+        
+        $form_container = new \FormContainer($lang->{"petplay_admin_{$this->entityName}_add"});
+        
+        foreach ($this->formFields as $field => $config) {
+            switch ($config['type']) {
+                case 'text':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_text_box($field, $config['default'] ?? '', [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
+                case 'textarea':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_text_area($field, $config['default'] ?? '', [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
+                case 'color':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        '<input type="color" name="' . $field . '" id="' . $field . '" value="' . ($config['default'] ?? '#FFFFFF') . '"' . 
+                        (($config['required'] ?? false) ? ' required="required"' : '') . 
+                        ' style="width: 50px; height: 25px; padding: 0; cursor: pointer;" />'
+                    );
+                    break;
+                case 'checkbox':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_check_box($field, 1, '', [
+                            'id' => $field,
+                            'checked' => $config['default'] ?? false
+                        ])
+                    );
+                    break;
+                case 'select':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_select_box($field, $config['options'] ?? [], $config['default'] ?? '', [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
+                case 'file':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_file_upload_box($field, [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
             }
         }
-
-        $conditionsString = implode(' AND ', $conditions);
-
-        return $conditionsString;
-    }
-
-    protected function getValidationErrors(array $inputData): array
-    {
-        $errors = [];
-
-        foreach ($this->columns as $columnName => $column) {
-            if (!empty($column['validator']) && is_callable($column['validator'])) {
-                $errors = array_merge($errors, $column['validator']($inputData[$columnName] ?? null));
-            }
-        }
-
-        return $errors;
-    }
-
-    protected function defaultInsertController(): void
-    {
-        if ($this->mybb->request_method == 'post') {
-            $data = array_intersect_key($this->mybb->input, $this->getCustomizableColumns());
-
-            $errors = $this->getValidationErrors($data);
-
-            if ($errors) {
-                \flash_message($this->getFormattedErrors($errors), 'error');
-            } else {
-                $data = $this->getEncodedValues($data);
-
-                $this->dbRepository->insert($data);
-
-                \flash_message($this->actionLang('added'), 'success');
-            }
-
-            \admin_redirect($this->actionUrl);
-        }
-    }
-
-    protected function defaultUpdateOptionController(): void
-    {
-        $entity = $this->dbRepository->getById(
-            $this->mybb->get_input('id', \MyBB::INPUT_INT)
-        );
-
-        if ($entity) {
-            if ($this->mybb->request_method == 'post') {
-                $data = [];
-
-                foreach ($this->getCustomizableColumns() as $columnName => $column) {
-                    $data[$columnName] = $this->mybb->input[$columnName] ?? null;
-                }
-
-                $errors = $this->getValidationErrors($data);
-
-                if ($errors) {
-                    \flash_message($this->getFormattedErrors($errors), 'error');
-                } else {
-                    $data = $this->getEncodedValues($data);
-
-                    $this->dbRepository->updateById($entity['id'], $data);
-
-                    \flash_message($this->actionLang('updated'), 'success');
-                }
-
-                \admin_redirect($this->actionUrl);
-            } else {
-                $this->page->output_header($this->actionLang());
-                $this->page->output_nav_tabs($this->sub_tabs, $this->actionName);
-
-                $this->outputForm(
-                    'edit',
-                    $this->actionUrl . '&amp;option=update&amp;id=' . (int)$entity['id'],
-                    $this->actionLang('update'),
-                    $entity
-                );
-
-                $this->page->output_footer();
-            }
-        }
-    }
-
-    protected function defaultDeleteOptionController(): void
-    {
-        $entity = $this->dbRepository->getById(
-            $this->mybb->get_input('id', \MyBB::INPUT_INT)
-        );
-
-        if ($entity) {
-            if ($this->mybb->request_method == 'post') {
-                if ($this->mybb->get_input('no')) {
-                    \admin_redirect($this->actionUrl);
-                } else {
-                    $this->dbRepository->deleteById($entity['id']);
-
-                    \flash_message($this->actionLang('deleted'), 'success');
-                    \admin_redirect($this->actionUrl);
-                }
-            } else {
-                $this->page->output_confirm_action(
-                    $this->actionUrl . '&amp;option=delete&amp;id=' . (int)$entity['id'],
-                    $this->actionLang('delete_confirm_message'),
-                    $this->actionLang('delete_confirm_title')
-                );
-            }
-        }
-    }
-
-    protected function outputForm(string $mode, string $url, string $title, array $entity = []): void
-    {
-        if ($mode == 'filter') {
-            $columns = $this->getFilterColumns();
-        } else {
-            $columns = $this->columns;
-        }
-
-        $form = new \Form($url, 'post');
-
-        $form_container = new \FormContainer($title);
-
-        foreach ($columns as $columnName => $column) {
-            if ($mode == 'filter' || $column['customizable'] === true) {
-                if ($mode == 'filter') {
-                    $name = 'filter[' . $columnName . ']';
-                } else {
-                    $name = $columnName;
-                }
-
-                if (!empty($column['formElement'])) {
-                    $formElement = $column['formElement']($form, $entity, $name);
-                } else {
-                    if (isset($column['formMethod'])) {
-                        $formMethod = $column['formMethod'];
-                    } else {
-                        $formMethod = 'generate_text_box';
-                    }
-
-                    if ($entity) {
-                        $value = $entity[$columnName];
-                    } else {
-                        $value = $column['default'] ?? false;
-                    }
-
-                    $formElement = $form->$formMethod($name, $value);
-                }
-
-                $form_container->output_row(
-                    $this->actionLang($columnName),
-                    $this->actionLang($columnName . '_description'),
-                    $formElement
-                );
-            }
-        }
-
+        
         $form_container->end();
-
-        $buttons[] = $form->generate_submit_button($this->namespaceLang('submit'));
-
+        
+        $buttons[] = $form->generate_submit_button($lang->petplay_admin_save);
+        $buttons[] = $form->generate_reset_button($lang->petplay_admin_cancel);
+        
         $form->output_submit_wrapper($buttons);
         $form->end();
+        
+        $page->output_footer();
     }
-
-    protected function getFormattedErrors(array $errors): string
+    
+    protected function showEditForm(int $id): void
     {
-        global $lang;
-
-        $output = '';
-
-        if ($errors) {
-            $output .= '<p>' . $lang->encountered_errors . '</p>';
-            $output .= '<ul>';
-
-            foreach ($errors as $name => $data) {
-                $errorString = $lang->sprintf($this->actionLang('error_' . $name), ...$data);
-
-                $output .= '<li>' . $errorString . '</li>';
-            }
-
-            $output .= '</ul>';
+        global $page, $lang, $db;
+        
+        // Make sure we have a valid ID
+        if ($id <= 0) {
+            flash_message($lang->petplay_admin_invalid_id, 'error');
+            admin_redirect($this->baseUrl);
         }
-
-        return $output;
-    }
-
-    protected function getEncodedValues(array $data): array
-    {
-        foreach ($data as $key => &$value) {
-            if (isset($this->columns[$key]['encoder']) && is_callable($this->columns[$key]['encoder'])) {
-                $value = $this->columns[$key]['encoder']($value);
+        
+        // Get repository instance
+        $repository = call_user_func([$this->repositoryClass, 'with'], $db);
+        
+        // Get the table name from the repository class
+        $tableName = constant($this->repositoryClass . '::TABLE_NAME');
+        
+        // Fetch entity by ID using direct query
+        $query = $db->simple_select($tableName, '*', 'id = ' . (int)$id);
+        $entity = $db->fetch_array($query);
+        
+        if (!$entity) {
+            flash_message($lang->{"petplay_admin_{$this->entityName}_not_found"}, 'error');
+            admin_redirect($this->baseUrl);
+        }
+        
+        $page->output_header($lang->petplay_admin);
+        $page->output_nav_tabs($GLOBALS['sub_tabs'], $this->entityName);
+        
+        $form = new \Form($this->baseUrl . '&amp;option=save&amp;id=' . $id, 'post');
+        
+        $form_container = new \FormContainer($lang->{"petplay_admin_{$this->entityName}_edit"});
+        
+        foreach ($this->formFields as $field => $config) {
+            switch ($config['type']) {
+                case 'text':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_text_box($field, $entity[$field] ?? ($config['default'] ?? ''), [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
+                case 'textarea':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_text_area($field, $entity[$field] ?? ($config['default'] ?? ''), [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
+                case 'color':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        '<input type="color" name="' . $field . '" id="' . $field . '" value="' . 
+                        ($entity[$field] ?? ($config['default'] ?? '#FFFFFF')) . '"' . 
+                        (($config['required'] ?? false) ? ' required="required"' : '') . 
+                        ' style="width: 50px; height: 25px; padding: 0; cursor: pointer;" />'
+                    );
+                    break;
+                case 'checkbox':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_check_box($field, 1, '', [
+                            'id' => $field,
+                            'checked' => (bool)($entity[$field] ?? ($config['default'] ?? false))
+                        ])
+                    );
+                    break;
+                case 'select':
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_select_box($field, $config['options'] ?? [], $entity[$field] ?? ($config['default'] ?? ''), [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ])
+                    );
+                    break;
+                case 'file':
+                    $currentFile = $entity[$field] ? '<br><small>' . $lang->petplay_admin_current_file . ': ' . htmlspecialchars_uni($entity[$field]) . '</small>' : '';
+                    $form_container->output_row(
+                        $config['label'],
+                        $config['description'] ?? '',
+                        $form->generate_file_upload_box($field, [
+                            'id' => $field,
+                            'required' => $config['required'] ?? false
+                        ]) . $currentFile
+                    );
+                    break;
             }
         }
-
-        return $data;
+        
+        $form_container->end();
+        
+        $buttons[] = $form->generate_submit_button($lang->petplay_admin_save);
+        $buttons[] = $form->generate_reset_button($lang->petplay_admin_cancel);
+        
+        $form->output_submit_wrapper($buttons);
+        $form->end();
+        
+        $page->output_footer();
     }
-
-    protected function namespaceLang(?string $name = null): string
+    
+    protected function saveEntity(array $input): void
     {
-        $name = __NAMESPACE__ . '_admin_' . $name;
-
-        return $this->lang->$name ?? '{' . $name . '}';
+        global $db, $lang, $mybb;
+        
+        // Verify post key for security
+        if (!verify_post_check($mybb->post_code)) {
+            flash_message($lang->invalid_post_verify_key2, 'error');
+            admin_redirect($this->baseUrl);
+        }
+        
+        // Get repository instance
+        $repository = call_user_func([$this->repositoryClass, 'with'], $db);
+        
+        // Get the table name from the repository class
+        $tableName = constant($this->repositoryClass . '::TABLE_NAME');
+        
+        // Prepare data for saving
+        $data = [];
+        foreach ($this->formFields as $field => $config) {
+            if ($config['type'] === 'checkbox') {
+                // Properly handle boolean values for PostgreSQL
+                $data[$field] = isset($input[$field]) ? true : false;
+            } elseif ($config['type'] === 'file') {
+                // Handle file uploads
+                if (isset($_FILES[$field]) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
+                    // Process file upload
+                    $uploadDir = MYBB_ROOT . 'uploads/petplay/';
+                    $fileName = time() . '_' . basename($_FILES[$field]['name']);
+                    
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    
+                    if (move_uploaded_file($_FILES[$field]['tmp_name'], $uploadDir . $fileName)) {
+                        $data[$field] = 'uploads/petplay/' . $fileName;
+                    }
+                } elseif (isset($input['id'])) {
+                    // If editing and no new file uploaded, keep existing file
+                    continue;
+                }
+            } else {
+                // For text fields, ensure they're properly escaped
+                $value = $input[$field] ?? ($config['default'] ?? null);
+                
+                // If the value is empty and the field allows NULL, set it to NULL
+                if ($value === '' && !($config['required'] ?? false)) {
+                    $data[$field] = null;
+                } else {
+                    $data[$field] = $value;
+                }
+            }
+        }
+        
+        // Validate required fields
+        foreach ($this->formFields as $field => $config) {
+            if (($config['required'] ?? false) && 
+                (
+                    !isset($data[$field]) || 
+                    ($data[$field] === '' && $config['type'] !== 'checkbox')
+                )
+            ) {
+                flash_message($lang->sprintf($lang->petplay_admin_field_required, $config['label']), 'error');
+                admin_redirect($this->baseUrl . '&option=' . (isset($input['id']) ? 'edit&id=' . $input['id'] : 'add'));
+            }
+        }
+        
+        // Save the entity
+        if (isset($input['id']) && (int)$input['id'] > 0) {
+            // Update existing entity using direct query
+            $id = (int)$input['id'];
+            
+            // Check if entity exists
+            $query = $db->simple_select($tableName, '*', 'id = ' . $id);
+            if ($db->num_rows($query) == 0) {
+                flash_message($lang->{"petplay_admin_{$this->entityName}_not_found"}, 'error');
+                admin_redirect($this->baseUrl);
+            }
+            
+            // Build update query
+            $updateData = [];
+            foreach ($data as $field => $value) {
+                if ($value === null) {
+                    $updateData[$field] = 'NULL';
+                } elseif (is_bool($value)) {
+                    $updateData[$field] = $value ? 'TRUE' : 'FALSE';
+                } else {
+                    $updateData[$field] = "'" . $db->escape_string($value) . "'";
+                }
+            }
+            
+            // Execute update query
+            $updateQuery = "UPDATE " . TABLE_PREFIX . $tableName . " SET ";
+            $updateParts = [];
+            foreach ($updateData as $field => $value) {
+                $updateParts[] = $field . "=" . $value;
+            }
+            $updateQuery .= implode(', ', $updateParts);
+            $updateQuery .= " WHERE id = " . $id;
+            
+            $db->query($updateQuery);
+            
+            flash_message($lang->{"petplay_admin_{$this->entityName}_edited"}, 'success');
+        } else {
+            // Create new entity using direct query
+            $insertFields = array_keys($data);
+            $insertValues = [];
+            
+            foreach ($data as $value) {
+                if ($value === null) {
+                    $insertValues[] = 'NULL';
+                } elseif (is_bool($value)) {
+                    $insertValues[] = $value ? 'TRUE' : 'FALSE';
+                } else {
+                    $insertValues[] = "'" . $db->escape_string($value) . "'";
+                }
+            }
+            
+            $insertQuery = "INSERT INTO " . TABLE_PREFIX . $tableName . " (" . implode(', ', $insertFields) . ") VALUES (" . implode(', ', $insertValues) . ")";
+            $db->query($insertQuery);
+            
+            flash_message($lang->{"petplay_admin_{$this->entityName}_added"}, 'success');
+        }
+        
+        admin_redirect($this->baseUrl);
     }
-
-    protected function actionLang(?string $name = null): string
+    
+    protected function deleteEntity(int $id): void
     {
-        $name = __NAMESPACE__ . '_admin_' . $this->actionName . ($name ? '_' . $name : null);
-
-        return $this->lang->$name ?? '{' . $name . '}';
+        global $db, $lang, $mybb;
+        
+        // Make sure we have a valid ID
+        if ($id <= 0) {
+            flash_message($lang->petplay_admin_invalid_id, 'error');
+            admin_redirect($this->baseUrl);
+        }
+        
+        // Verify post key for security
+        if (!isset($mybb->input['my_post_key']) || !verify_post_check($mybb->input['my_post_key'])) {
+            flash_message($lang->invalid_post_verify_key2, 'error');
+            admin_redirect($this->baseUrl);
+        }
+        
+        // Get repository instance
+        $repository = call_user_func([$this->repositoryClass, 'with'], $db);
+        
+        // Get the table name from the repository class
+        $tableName = constant($this->repositoryClass . '::TABLE_NAME');
+        
+        // Check if entity exists
+        $query = $db->simple_select($tableName, '*', 'id = ' . (int)$id);
+        
+        if ($db->num_rows($query) == 0) {
+            flash_message($lang->{"petplay_admin_{$this->entityName}_not_found"}, 'error');
+            admin_redirect($this->baseUrl);
+        }
+        
+        // Delete the entity
+        $db->delete_query($tableName, 'id = ' . (int)$id);
+        
+        flash_message($lang->{"petplay_admin_{$this->entityName}_deleted"}, 'success');
+        admin_redirect($this->baseUrl);
     }
-
-    protected function getListedColumns(): array
-    {
-        return array_filter($this->columns, fn($column) => $column['listed'] === true);
-    }
-
-    protected function getCustomizableColumns(): array
-    {
-        return array_filter($this->columns, fn($column) => $column['customizable'] === true);
-    }
-
-    protected function getFilterColumns(): array
-    {
-        return array_filter($this->columns, fn($column) => $column['filter'] === true);
-    }
-}
+} 

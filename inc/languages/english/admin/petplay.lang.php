@@ -28,3 +28,132 @@ $l['petplay_admin_capsules_page_description'] = 'Manage capsules used to catch a
 $l['petplay_admin_pets'] = 'Pets';
 $l['petplay_admin_pets_page_description'] = 'Manage individual pets in the system.';
 
+// Common Admin CP strings
+$l['petplay_admin_id'] = 'ID';
+$l['petplay_admin_actions'] = 'Actions';
+$l['petplay_admin_save'] = 'Save';
+$l['petplay_admin_cancel'] = 'Cancel';
+$l['petplay_admin_edit'] = 'Edit';
+$l['petplay_admin_delete'] = 'Delete';
+$l['petplay_admin_field_required'] = 'The field "%s" is required.';
+$l['petplay_admin_current_file'] = 'Current file';
+$l['petplay_admin_invalid_id'] = 'Invalid ID provided.';
+
+// Admin CP Types Management
+$l['petplay_admin_types_add'] = 'Add Type';
+$l['petplay_admin_types_edit'] = 'Edit Type';
+$l['petplay_admin_types_delete'] = 'Delete Type';
+$l['petplay_admin_types_name'] = 'Name';
+$l['petplay_admin_types_name_desc'] = 'The name of the type (e.g., Fire, Water, Grass).';
+$l['petplay_admin_types_description'] = 'Description';
+$l['petplay_admin_types_description_desc'] = 'A brief description of this type and its characteristics.';
+$l['petplay_admin_types_colour'] = 'Colour';
+$l['petplay_admin_types_colour_desc'] = 'The colour associated with this type. Used for visual representation.';
+$l['petplay_admin_types_sprite_path'] = 'Sprite Path';
+$l['petplay_admin_types_sprite_path_desc'] = 'Path to the type\'s icon image. Leave empty to use default.';
+$l['petplay_admin_types_is_default'] = 'Default Type';
+$l['petplay_admin_types_is_default_desc'] = 'If checked, this will be considered the default type for any new species.';
+$l['petplay_admin_types_added'] = 'Type added successfully.';
+$l['petplay_admin_types_edited'] = 'Type updated successfully.';
+$l['petplay_admin_types_deleted'] = 'Type deleted successfully.';
+$l['petplay_admin_types_delete_confirm'] = 'Are you sure you want to delete this type?';
+$l['petplay_admin_types_not_found'] = 'The requested type was not found.';
+$l['petplay_admin_no_types'] = 'No types have been created yet.';
+
+// Admin CP Natures Management
+$l['petplay_admin_natures_add'] = 'Add Nature';
+$l['petplay_admin_natures_edit'] = 'Edit Nature';
+$l['petplay_admin_natures_delete'] = 'Delete Nature';
+$l['petplay_admin_natures_name'] = 'Name';
+$l['petplay_admin_natures_description'] = 'Description';
+$l['petplay_admin_natures_added'] = 'Nature added successfully.';
+$l['petplay_admin_natures_edited'] = 'Nature updated successfully.';
+$l['petplay_admin_natures_deleted'] = 'Nature deleted successfully.';
+$l['petplay_admin_natures_delete_confirm'] = 'Are you sure you want to delete this nature?';
+$l['petplay_admin_natures_not_found'] = 'The requested nature was not found.';
+$l['petplay_admin_no_natures'] = 'No natures have been created yet.';
+
+// Admin CP Abilities Management
+$l['petplay_admin_abilities_add'] = 'Add Ability';
+$l['petplay_admin_abilities_edit'] = 'Edit Ability';
+$l['petplay_admin_abilities_delete'] = 'Delete Ability';
+$l['petplay_admin_abilities_name'] = 'Name';
+$l['petplay_admin_abilities_description'] = 'Description';
+$l['petplay_admin_abilities_added'] = 'Ability added successfully.';
+$l['petplay_admin_abilities_edited'] = 'Ability updated successfully.';
+$l['petplay_admin_abilities_deleted'] = 'Ability deleted successfully.';
+$l['petplay_admin_abilities_delete_confirm'] = 'Are you sure you want to delete this ability?';
+$l['petplay_admin_abilities_not_found'] = 'The requested ability was not found.';
+$l['petplay_admin_no_abilities'] = 'No abilities have been created yet.';
+
+// Admin CP Moves Management
+$l['petplay_admin_moves_add'] = 'Add Move';
+$l['petplay_admin_moves_edit'] = 'Edit Move';
+$l['petplay_admin_moves_delete'] = 'Delete Move';
+$l['petplay_admin_moves_name'] = 'Name';
+$l['petplay_admin_moves_description'] = 'Description';
+$l['petplay_admin_moves_type'] = 'Type';
+$l['petplay_admin_moves_power'] = 'Power';
+$l['petplay_admin_moves_accuracy'] = 'Accuracy';
+$l['petplay_admin_moves_added'] = 'Move added successfully.';
+$l['petplay_admin_moves_edited'] = 'Move updated successfully.';
+$l['petplay_admin_moves_deleted'] = 'Move deleted successfully.';
+$l['petplay_admin_moves_delete_confirm'] = 'Are you sure you want to delete this move?';
+$l['petplay_admin_moves_not_found'] = 'The requested move was not found.';
+$l['petplay_admin_no_moves'] = 'No moves have been created yet.';
+
+// Admin CP Species Management
+$l['petplay_admin_species_add'] = 'Add Species';
+$l['petplay_admin_species_edit'] = 'Edit Species';
+$l['petplay_admin_species_delete'] = 'Delete Species';
+$l['petplay_admin_species_name'] = 'Name';
+$l['petplay_admin_species_description'] = 'Description';
+$l['petplay_admin_species_type_primary'] = 'Primary Type';
+$l['petplay_admin_species_type_secondary'] = 'Secondary Type';
+$l['petplay_admin_species_base_stats'] = 'Base Stats';
+$l['petplay_admin_species_sprite'] = 'Sprite';
+$l['petplay_admin_species_sprite_shiny'] = 'Shiny Sprite';
+$l['petplay_admin_species_sprite_mini'] = 'Mini Sprite';
+$l['petplay_admin_species_added'] = 'Species added successfully.';
+$l['petplay_admin_species_edited'] = 'Species updated successfully.';
+$l['petplay_admin_species_deleted'] = 'Species deleted successfully.';
+$l['petplay_admin_species_delete_confirm'] = 'Are you sure you want to delete this species?';
+$l['petplay_admin_species_not_found'] = 'The requested species was not found.';
+$l['petplay_admin_no_species'] = 'No species have been created yet.';
+
+// Admin CP Capsules Management
+$l['petplay_admin_capsules_add'] = 'Add Capsule';
+$l['petplay_admin_capsules_edit'] = 'Edit Capsule';
+$l['petplay_admin_capsules_delete'] = 'Delete Capsule';
+$l['petplay_admin_capsules_name'] = 'Name';
+$l['petplay_admin_capsules_description'] = 'Description';
+$l['petplay_admin_capsules_sprite'] = 'Sprite';
+$l['petplay_admin_capsules_catch_rate'] = 'Catch Rate';
+$l['petplay_admin_capsules_added'] = 'Capsule added successfully.';
+$l['petplay_admin_capsules_edited'] = 'Capsule updated successfully.';
+$l['petplay_admin_capsules_deleted'] = 'Capsule deleted successfully.';
+$l['petplay_admin_capsules_delete_confirm'] = 'Are you sure you want to delete this capsule?';
+$l['petplay_admin_capsules_not_found'] = 'The requested capsule was not found.';
+$l['petplay_admin_no_capsules'] = 'No capsules have been created yet.';
+
+// Admin CP Pets Management
+$l['petplay_admin_pets_add'] = 'Add Pet';
+$l['petplay_admin_pets_edit'] = 'Edit Pet';
+$l['petplay_admin_pets_delete'] = 'Delete Pet';
+$l['petplay_admin_pets_species'] = 'Species';
+$l['petplay_admin_pets_nickname'] = 'Nickname';
+$l['petplay_admin_pets_gender'] = 'Gender';
+$l['petplay_admin_pets_capsule'] = 'Capsule';
+$l['petplay_admin_pets_nature'] = 'Nature';
+$l['petplay_admin_pets_ability'] = 'Ability';
+$l['petplay_admin_pets_is_shiny'] = 'Shiny';
+$l['petplay_admin_pets_individual_values'] = 'Individual Values';
+$l['petplay_admin_pets_added'] = 'Pet added successfully.';
+$l['petplay_admin_pets_edited'] = 'Pet updated successfully.';
+$l['petplay_admin_pets_deleted'] = 'Pet deleted successfully.';
+$l['petplay_admin_pets_delete_confirm'] = 'Are you sure you want to delete this pet?';
+$l['petplay_admin_pets_not_found'] = 'The requested pet was not found.';
+$l['petplay_admin_no_pets'] = 'No pets have been created yet.';
+
+$l['petplay_admin_delete_error'] = 'An error occurred while trying to delete the item. Please check the error logs.';
+
