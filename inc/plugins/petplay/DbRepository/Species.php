@@ -37,7 +37,7 @@ class Species extends DbEntityRepository
                 ]
             ]
         ],
-        'description' => ['type' => 'text', 'notNull' => true, 'default' => "''"],
+        'description' => ['type' => 'text', 'default' => 'NULL'],
         'base_stats' => [
             'type' => 'jsonb', 
             'notNull' => true, 

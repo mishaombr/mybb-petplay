@@ -13,7 +13,7 @@ class Types extends DbEntityRepository
     public const COLUMNS = [
         'id' => ['type' => 'serial', 'primaryKey' => true],
         'name' => ['type' => 'varchar', 'length' => 50, 'notNull' => true, 'uniqueKey' => 'name'],
-        'description' => ['type' => 'text', 'notNull' => true, 'default' => "''"],
+        'description' => ['type' => 'text', 'default' => 'NULL'],
         'colour' => ['type' => 'varchar', 'length' => 7, 'notNull' => true, 'default' => "'#A8A878'"],
         'sprite_path' => ['type' => 'varchar', 'length' => 255, 'default' => 'NULL'],
         'is_default' => ['type' => 'boolean', 'notNull' => true, 'default' => 'false'],

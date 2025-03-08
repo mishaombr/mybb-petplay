@@ -31,7 +31,7 @@ class Moves extends DbEntityRepository
             'notNull' => true,
             'check' => "category IN ('physical', 'special', 'status')"
         ],
-        'description' => ['type' => 'text', 'notNull' => true, 'default' => "''"],
+        'description' => ['type' => 'text', 'default' => 'NULL'],
         'power_points' => ['type' => 'integer', 'notNull' => true, 'default' => 10],
         'power' => ['type' => 'integer', 'default' => 'NULL'],
         'accuracy' => ['type' => 'integer', 'default' => 'NULL'],

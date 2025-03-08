@@ -300,11 +300,14 @@ function buildCreateTableQuery(string $tableName, array $columns, array $tableCo
         }
     }
 
-    // Add table-level check constraints
+    // Add table-level constraints
     if (!empty($tableConstraints)) {
         foreach ($tableConstraints as $constraintName => $constraint) {
             if ($constraint['type'] === 'check') {
                 $keyDefinitions[] = 'CONSTRAINT ' . $tableName . '_' . $constraintName . ' CHECK (' . $constraint['check'] . ')';
+            } elseif ($constraint['type'] === 'unique' && !empty($constraint['columns'])) {
+                // Add support for unique constraints
+                $keyDefinitions[] = 'CONSTRAINT ' . $tableName . '_' . $constraintName . ' UNIQUE (' . implode(', ', $constraint['columns']) . ')';
             }
         }
     }
