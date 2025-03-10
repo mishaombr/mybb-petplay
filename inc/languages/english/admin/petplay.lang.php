@@ -241,3 +241,5 @@ $l['petplay_admin_pets_uuid'] = 'UUID';
 $l['petplay_admin_pets_uuid_desc'] = 'The unique identifier for this pet.';
 $l['petplay_admin_pets_current_owner'] = 'Current Owner';
 $l['petplay_admin_pets_current_owner_desc'] = 'The current owner of this pet.';
+
+$l['petplay_admin_pets_randomize_ivs'] = 'Randomise IVs';

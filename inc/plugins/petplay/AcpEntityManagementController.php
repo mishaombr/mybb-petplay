@@ -50,6 +50,49 @@ class AcpEntityManagementController
         }
     }
     
+    protected function renderAddButton(): void
+    {
+        global $lang;
+        
+        // Add CSS for the button
+        echo '<style>
+            .add-button {
+                display: inline-block;
+                padding: 8px 16px;
+                background: linear-gradient(to bottom, #2ecc71, #27ae60);
+                border: 1px solid #219a52;
+                border-radius: 3px;
+                color: #fff;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: bold;
+                text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+                transition: all 0.2s ease;
+            }
+            
+            .add-button:hover {
+                background: linear-gradient(to bottom, #27ae60, #219a52);
+                border-color: #1e8449;
+                color: #fff;
+                text-decoration: none;
+            }
+            
+            .add-button i {
+                margin-right: 5px;
+            }
+        </style>';
+        
+        // Show add button
+        echo '<div style="margin-bottom: 10px; overflow: hidden;">
+            <div class="float_left">
+                <a href="' . $this->baseUrl . '&amp;option=add" class="add-button">
+                    <i class="fa-solid fa-plus"></i>' . $lang->{"petplay_admin_{$this->entityName}_add"} . '
+                </a>
+            </div>
+            <div style="clear: both;"></div>
+        </div>';
+    }
+    
     protected function showList(): void
     {
         global $page, $lang, $db, $mybb;
@@ -57,15 +100,8 @@ class AcpEntityManagementController
         $page->output_header($lang->petplay_admin);
         $page->output_nav_tabs($GLOBALS['sub_tabs'], $this->entityName);
         
-        // Show add button
-        echo '<div style="margin-bottom: 10px; overflow: hidden;">
-            <div class="float_left">
-                <a href="' . $this->baseUrl . '&amp;option=add" class="button">
-                    <i class="fa-solid fa-plus"></i> ' . $lang->{"petplay_admin_{$this->entityName}_add"} . '
-                </a>
-            </div>
-            <div style="clear: both;"></div>
-        </div>';
+        // Use the new helper method to render the add button
+        $this->renderAddButton();
         
         // Get repository instance and table name
         $repository = call_user_func([$this->repositoryClass, 'with'], $db);

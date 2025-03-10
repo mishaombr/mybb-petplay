@@ -45,15 +45,8 @@ class AcpPetsController extends AcpEntityManagementController
         $page->output_header($lang->petplay_admin);
         $page->output_nav_tabs($GLOBALS['sub_tabs'], $this->entityName);
         
-        // Show add button
-        echo '<div style="margin-bottom: 10px; overflow: hidden;">
-            <div class="float_left">
-                <a href="' . $this->baseUrl . '&amp;option=add" class="button">
-                    <i class="fa-solid fa-plus"></i> ' . $lang->{"petplay_admin_{$this->entityName}_add"} . '
-                </a>
-            </div>
-            <div style="clear: both;"></div>
-        </div>';
+        // Use the parent class's button renderer
+        $this->renderAddButton();
         
         // Get repository instance and table name
         $repository = call_user_func([$this->repositoryClass, 'with'], $db);
@@ -323,6 +316,60 @@ class AcpPetsController extends AcpEntityManagementController
         global $lang;
         
         $stats_container = new \FormContainer($title);
+        
+        // Add randomize button for IVs only
+        if ($prefix === 'iv') {
+            // Add the button styling if not already present
+            echo '<style>
+                .randomize-button {
+                    display: inline-block;
+                    padding: 8px 16px;
+                    background: linear-gradient(to bottom, #2ecc71, #27ae60);
+                    border: 1px solid #219a52;
+                    border-radius: 3px;
+                    color: #fff;
+                    text-decoration: none;
+                    font-size: 13px;
+                    font-weight: bold;
+                    text-shadow: 0 1px 0 rgba(0,0,0,0.2);
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                }
+                
+                .randomize-button:hover {
+                    background: linear-gradient(to bottom, #27ae60, #219a52);
+                    border-color: #1e8449;
+                    color: #fff;
+                    text-decoration: none;
+                }
+                
+                .randomize-button i {
+                    margin-right: 5px;
+                }
+            </style>';
+            
+            // Add the button and script
+            $stats_container->output_row(
+                '',
+                '',
+                '<button type="button" class="randomize-button" onclick="randomizeIVs()">
+                    <i class="fa-solid fa-shuffle"></i>' . $lang->petplay_admin_pets_randomize_ivs . '
+                </button>
+                <script type="text/javascript">
+                function randomizeIVs() {
+                    var ivFields = ["iv_hp", "iv_attack", "iv_defence", "iv_special_attack", "iv_special_defence", "iv_speed"];
+                    
+                    ivFields.forEach(function(field) {
+                        var input = document.getElementById(field);
+                        if (input) {
+                            // Generate random number between 0 and 31
+                            input.value = Math.floor(Math.random() * 32);
+                        }
+                    });
+                }
+                </script>'
+            );
+        }
         
         $stats = [
             'hp' => $lang->petplay_admin_species_stat_hp,
